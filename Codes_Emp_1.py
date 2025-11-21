@@ -53,7 +53,7 @@ def leveragedPath(data, leverage, initial_value):
 
 
 
-def plotpaths(start_date, case, end_date = "2025-01-01"):
+def plotpaths(start_date, case, filename, end_date = "2025-01-01"):
     # Download data
     dataIndexSP500 = yf.Ticker("^GSPC").history(start=start_date, end=end_date)["Close"]
 
@@ -97,13 +97,11 @@ def plotpaths(start_date, case, end_date = "2025-01-01"):
         plt.title("Final Portfolio Value for Different Leverage Strategies (start_date = " + start_date + ")", fontdict=font)
         plt.ylabel("Final Value", fontdict=font)
         plt.xlabel("Leverage Ratio", fontdict=font)
-        plt.grid(True, axis='y')
+        plt.grid(True, axis='y', alpha=0.4)
         plt.tight_layout()
-        plt.show()
-        year = start_date[:4]  # Extract year from start_date
-        filename = f"Final_Portfolio_Values_Different_Leverages_{year}.pdf"
-        #plt.savefig(filename, format='pdf', bbox_inches='tight', transparent=True)
-        #plt.close()
+        #plt.show()
+        plt.savefig(filename, format='pdf', bbox_inches='tight', transparent=True)
+        plt.close()
         print(f"✅ Figure saved as: {filename}")
     elif case == "all_paths":
         # Plot 1 (Different leverages)
@@ -119,11 +117,9 @@ def plotpaths(start_date, case, end_date = "2025-01-01"):
         plt.grid(True)
         plt.legend()
         plt.tight_layout()
-        plt.show()
-        year = start_date[:4]  # Extract year from start_date
-        filename = f"Paths_Different_Leverages_{year}.pdf"
-        #plt.savefig(filename, format='pdf', bbox_inches='tight', transparent=True)
-        #plt.close()
+        #plt.show()
+        plt.savefig(filename, format='pdf', bbox_inches='tight', transparent=True)
+        plt.close()
         print(f"✅ Figure saved as: {filename}")
     elif case == "worst_vs_mid":
         # Plot 2 (Compare worst against mid and unleveraged)
@@ -137,16 +133,14 @@ def plotpaths(start_date, case, end_date = "2025-01-01"):
         plt.grid(True)
         plt.legend()
         plt.tight_layout()
-        plt.show()
-        year = start_date[:4]  # Extract year from start_date
-        filename = f"Paths_Mid_Worst_Leverages_{year}.pdf"
-        #plt.savefig(filename, format='pdf', bbox_inches='tight', transparent=True)
-        #plt.close()
+        #plt.show()
+        plt.savefig(filename, format='pdf', bbox_inches='tight', transparent=True)
+        plt.close()
         print(f"✅ Figure saved as: {filename}")
    
 
-def plot_procentage_return(start_date):
-    data = yf.Ticker("^GSPC").history(start=start_date, end="2025-01-01")["Close"].dropna()
+def plot_procentage_return(start_date, filename, end_date="2025-01-01"):
+    data = yf.Ticker("^GSPC").history(start=start_date, end=end_date)["Close"].dropna()
     initial_value = data.iloc[0]
     investment_time_year = (data.index[-1] - data.index[0]).days / 365.25
     returns = []
@@ -162,24 +156,34 @@ def plot_procentage_return(start_date):
         returns.append(percent_return)
     # --- Plot ---
     plt.figure(figsize=(8, 6))
-    bars = plt.bar(leverage_labels, returns, color=colors, width=0.5)
+    x = np.linspace(0, len(leverage_labels) - 1, len(leverage_labels)) * 0.7
+    bars = plt.bar(x, returns, color=colors, width=0.5)      
+    for bar in bars:
+            height = bar.get_height()
+            bar_color = bar.get_facecolor()
+            plt.text(
+                bar.get_x() + bar.get_width() / 2,   # x position (center of bar)
+                height + max(returns) * 0.015,        # y position (slightly above bar)
+                f'{height:,.0f}',                    # formatted value
+                ha='center', va='bottom',
+                fontsize=8, color=bar_color, fontweight='bold'
+            )
+    plt.xticks(x, leverage_labels, rotation=45, ha='right')    
     plt.title(f"Annualized Return by Leverage Strategy (start_date = {start_date})", fontdict=font)
     plt.ylabel("Annualized Return (%)", fontdict=font)
     plt.xlabel("Leverage Ratio", fontdict=font)
     plt.grid(True, axis='y', alpha=0.4)
     plt.tight_layout()
-    plt.show()
-    year = start_date[:4]  # Extract year from start_date
-    filename = f"Annualized_Return_by_Leverage_Strategy_{year}.pdf"
-    #plt.savefig(filename, format='pdf', bbox_inches='tight', transparent=True)
-    #plt.close() 
+    #plt.show()
+    plt.savefig(filename, format='pdf', bbox_inches='tight', transparent=True)
+    plt.close() 
     print(f"✅ Figure saved as: {filename}")
      
         
-def plot_procentage_returns(start_dates, leverage_values_for_plot, leverage_labels_for_plot):
+def plot_procentage_returns(start_dates, leverage_values_for_plot, leverage_labels_for_plot, filename, end_date="2025-01-01"):
     strategy_returns = []
     for start_date in start_dates:
-        data = yf.Ticker("^GSPC").history(start=start_date, end="2025-01-01")["Close"].dropna()
+        data = yf.Ticker("^GSPC").history(start=start_date, end=end_date)["Close"].dropna()
         initial_value = data.iloc[0]
         investment_time_year = (data.index[-1] - data.index[0]).days / 365.25
         returns = []
@@ -213,15 +217,13 @@ def plot_procentage_returns(start_dates, leverage_values_for_plot, leverage_labe
     plt.legend(title="Strategy", loc="best")
     plt.grid(True, axis='y')
     plt.tight_layout()
-    plt.show()
-    year = start_date[:4]  # Extract year from start_date
-    filename = f"Annualized_Return_by_Leverage_Strategy_multiple_starts.pdf"
-    #plt.savefig(filename, format='pdf', bbox_inches='tight', transparent=True)
-    #plt.close() 
+    #plt.show()
+    plt.savefig(filename, format='pdf', bbox_inches='tight', transparent=True)
+    plt.close() 
     print(f"✅ Figure saved as: {filename}")
     
 
-def plot_procentage_returns_different_starts_worst_mid(start_dates, end_date="2025-01-01"):
+def plot_procentage_returns_different_starts_worst_mid(start_dates, filename, end_date="2025-01-01"):
     # Here we want to box plot the worst-case and mid-case leverage strategies for different start dates in a way that the box
     # is the percentage return of the mid case and then we plot the worst case box on top of it. Or in case were the worst case is worse
     # than the mid case, we plot the worst case box in a way that it is seen that this box is below
@@ -258,15 +260,13 @@ def plot_procentage_returns_different_starts_worst_mid(start_dates, end_date="20
     plt.legend(title="Strategy", loc="upper left")
     plt.grid(True, axis='y')
     plt.tight_layout()
-    plt.show()
-    year = start_date[:4]  # Extract year from start_date
-    filename = f"Annualized_Return_Mid_Worst_Case_Leverage_Strategies.pdf"
-    #plt.savefig(filename, format='pdf', bbox_inches='tight', transparent=True)
-    #plt.close()
+    #plt.show()
+    plt.savefig(filename, format='pdf', bbox_inches='tight', transparent=True)
+    plt.close()
     print(f"✅ Figure saved as: {filename}")
     
     
-def plot_stacked_paths_selected_leverages(multiple_dates, selected_leverages=[1, 1.28, 3, 5], end_date="2025-01-01"):
+def plot_stacked_paths_selected_leverages(multiple_dates, filename, selected_leverages=[1, 1.28, 3, 5], end_date="2025-01-01"):
     n = len(multiple_dates)
     fig, axes = plt.subplots(n, 1, figsize=(12, 3 * n), sharex=True)
 
@@ -320,7 +320,10 @@ def plot_stacked_paths_selected_leverages(multiple_dates, selected_leverages=[1,
     axes[-1].set_xlabel("Date")
     plt.suptitle("Performance of Different Leverages from Various Starting Points", fontsize=16)
     plt.tight_layout(rect=[0, 0, 1, 0.95])
-    plt.show()
+    #plt.show()
+    plt.savefig(filename, format='pdf', bbox_inches='tight', transparent=True)
+    plt.close()
+    print(f"✅ Figure saved as: {filename}")
 
 
 def compute_historical_VaR(price_series, confidence_level):
@@ -335,7 +338,7 @@ def compute_historical_VaR(price_series, confidence_level):
 
 
 
-def plot_var_histogram(price_series, title, confidence_level=0.95, bins=50):
+def plot_var_histogram(price_series, title, filename, confidence_level=0.95, bins=50):
     daily_returns = price_series.pct_change().dropna()
     var_value = np.quantile(daily_returns, (1 - confidence_level))
 
@@ -348,11 +351,14 @@ def plot_var_histogram(price_series, title, confidence_level=0.95, bins=50):
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
-    plt.show()
+    #plt.show()
+    plt.savefig(filename, format='pdf', bbox_inches='tight', transparent=True)
+    plt.close()
+    print(f"✅ Figure saved as: {filename}")
     
     
     
-def plot_returns_with_var_threshold(price_series, date_series, leverage_val, title, confidence_level=0.95):
+def plot_returns_with_var_threshold(price_series, date_series, leverage_val, title, filename, confidence_level=0.95):
     returns = price_series.pct_change().dropna()
     var_value = np.quantile(returns, (1 - confidence_level))
     
@@ -382,7 +388,11 @@ def plot_returns_with_var_threshold(price_series, date_series, leverage_val, tit
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
-    plt.show()
+    #plt.show()
+    filename1 = filename + "_Daily_Returns.pdf"
+    plt.savefig(filename1, format='pdf', bbox_inches='tight', transparent=True)
+    plt.close()
+    print(f"✅ Figure saved as: {filename1}")
     
 
     # Additional plot of breaches timeline
@@ -395,7 +405,11 @@ def plot_returns_with_var_threshold(price_series, date_series, leverage_val, tit
     plt.xlabel("Date", fontdict=font)
     plt.grid(True, axis="x", linestyle="--", alpha=0.5)
     plt.tight_layout()
-    plt.show()
+    #plt.show()
+    filename2 = filename + "_Timeline_VaR_Breaches.pdf"
+    plt.savefig(filename2, format='pdf', bbox_inches='tight', transparent=True)
+    plt.close()
+    print(f"✅ Figure saved as: {filename2}")
     
     
     print("Date seies:", breach_dates)
@@ -408,12 +422,16 @@ def plot_returns_with_var_threshold(price_series, date_series, leverage_val, tit
     plt.ylabel("Number of Breaches", fontdict=font)
     plt.grid(True)
     plt.tight_layout()
-    plt.show()
+    #plt.show()
+    filename3 = filename + "_Histogram_VaR_Breaches.pdf"
+    plt.savefig(filename3, format='pdf', bbox_inches='tight', transparent=True)
+    plt.close()
+    print(f"✅ Figure saved as: {filename3}")
 
 
 
 
-def plot_overlaid_var_histograms(paths, labels_for_plot, values_for_plot, confidence_level=0.95, bins=200):
+def plot_overlaid_var_histograms(paths, labels_for_plot, values_for_plot, filename, confidence_level=0.95, bins=200):
     """
     Plot overlaid histograms of daily returns for multiple strategies with VaR lines,
     each colored and labeled consistently.
@@ -450,12 +468,15 @@ def plot_overlaid_var_histograms(paths, labels_for_plot, values_for_plot, confid
     plt.legend(loc='upper left')
     plt.grid(True)
     plt.tight_layout()
-    plt.show()
+    #plt.show()
+    plt.savefig(filename, format='pdf', bbox_inches='tight', transparent=True)
+    plt.close()
+    print(f"✅ Figure saved as: {filename}")
 
 
 
 
-def plot_max_drawdowns(dates):
+def plot_max_drawdowns(dates, filename):
     def get_mdd_per_year(lev):
         mdd_list = []
         for i in range(len(dates)-1):
@@ -530,11 +551,14 @@ def plot_max_drawdowns(dates):
     plt.grid(True, alpha=0.4)
     plt.legend()
     plt.tight_layout()
-    plt.show()
+    #plt.show()
+    plt.savefig(filename, format='pdf', bbox_inches='tight', transparent=True)
+    plt.close()
+    print(f"✅ Figure saved as: {filename}")
     
 
 
-def plot_risk_return_metrics():
+def plot_risk_return_metrics(filename, start_date_comparisons="2000-01-01", end_date_comparisons="2025-01-01"):
     def compute_sharpe_ratio(lev, start_date, end_date):
         # Download data
         dataIndexSP500 = yf.Ticker("^GSPC").history(start=start_date, end=end_date)["Close"]
@@ -621,8 +645,7 @@ def plot_risk_return_metrics():
         return mdd_avg
 
 
-    start_date_comparisons  =  "2000-01-01"
-    end_date_comparisons    =  "2025-01-01"
+    
     dates = pd.date_range(start=start_date_comparisons,
                                 end=end_date_comparisons,
                                 freq="YS").strftime("%Y-%m-%d").tolist()
@@ -732,7 +755,11 @@ def plot_risk_return_metrics():
 
     fig.suptitle("Risk and Return Metrics Across Leverage Strategies", fontsize=16)
     plt.tight_layout()
-    plt.show()
+    #plt.show()
+    filename1 = filename + "_4_Panel.pdf"
+    plt.savefig(filename1, format='pdf', bbox_inches='tight', transparent=True)
+    plt.close()
+    print(f"✅ Figure saved as: {filename1}")
 
 
 
@@ -770,7 +797,11 @@ def plot_risk_return_metrics():
 
     fig.suptitle("Risk and Return Metrics Across Leverage Strategies", fontsize=16)
     plt.tight_layout()
-    plt.show()
+    #plt.show()
+    filename2 = filename + "_3_Panel.pdf"
+    plt.savefig(filename2, format='pdf', bbox_inches='tight', transparent=True)
+    plt.close()
+    print(f"✅ Figure saved as: {filename2}")
     
     
 def days_to_recovery_for_leverage(lev,
@@ -830,10 +861,12 @@ def days_to_recovery_for_leverage(lev,
 
 def days_to_recovery_all_leverages(leverage_values,
                                    lev_labels,
+                                   filename,
                                    start_date="2005-01-01",
                                    end_date="2025-01-01",
                                    start_crisis="2020-02-01",
-                                   end_crisis="2022-02-01"):
+                                   end_crisis="2022-02-01"
+                                   ):
     
     results = []
     for lev in leverage_values:
@@ -883,7 +916,10 @@ def days_to_recovery_all_leverages(leverage_values,
     plt.grid(True, alpha=0.4)
 
     plt.tight_layout()
-    plt.show()
+    #plt.show()
+    plt.savefig(filename, format='pdf', bbox_inches='tight', transparent=True)
+    plt.close()
+    print(f"✅ Figure saved as: {filename}")
     
     
   
@@ -918,45 +954,52 @@ values = [result_unlev, result_2x, result_3x, result_4x, result_5x, result_worst
 
 # Run modules
 
-plotpaths(start_date = "2005-01-01", case="final_values")
-plotpaths(start_date = "2005-01-01", case="all_paths")
-plotpaths(start_date = "2005-01-01", case="worst_vs_mid")
+'''
+plotpaths(start_date = "2005-01-01", case="final_values", filename="Final_Values_Leverages_2005.pdf")
+plotpaths(start_date = "2005-01-01", case="all_paths", filename="Paths_All_cases_Leverages_2005.pdf")
+plotpaths(start_date = "2005-01-01", case="worst_vs_mid", filename="Paths_Mid_Worst_Leverages_2005.pdf")
 
-plot_stacked_paths_selected_leverages(multiple_dates = ["2000-01-01", "2005-01-01", "2010-01-01", "2020-01-01"])
+plotpaths(start_date = "2000-01-01", case="all_paths", filename="Paths_All_cases_Leverages_2000.pdf")
+plotpaths(start_date = "2010-01-01", case="all_paths", filename="Paths_All_cases_Leverages_2010.pdf")
+plotpaths(start_date = "2015-01-01", case="all_paths", filename="Paths_All_cases_Leverages_2015.pdf")
+plotpaths(start_date = "2020-01-01", case="all_paths", filename="Paths_All_cases_Leverages_2020.pdf")
 
-plot_procentage_return(start_date = "2005-01-01")
-plot_procentage_return(start_date = "2010-01-01")
-plot_procentage_return(start_date = "2015-01-01")
+plot_stacked_paths_selected_leverages(multiple_dates = ["2000-01-01", "2005-01-01", "2010-01-01", "2020-01-01"], filename="Stacked_Paths_00_05_10_20.pdf")
 
-plot_procentage_returns(start_dates = ["2000-01-01", "2005-01-01", "2010-01-01", "2020-01-01"], leverage_values_for_plot = [1, 1.28, 3], leverage_labels_for_plot=['1x', 'Worst-Case', 'Mid-Case'])
-plot_procentage_returns(start_dates = ["2000-01-01", "2005-01-01", "2010-01-01", "2020-01-01"], leverage_values_for_plot = leverage_values, leverage_labels_for_plot = leverage_labels)
+plot_procentage_return(start_date = "2005-01-01", filename="Annualized_Return_by_Leverage_Strategy_2005.pdf")
+plot_procentage_return(start_date = "2010-01-01", filename="Annualized_Return_by_Leverage_Strategy_2010.pdf")
+plot_procentage_return(start_date = "2015-01-01", filename="Annualized_Return_by_Leverage_Strategy_2015.pdf")
 
-plotpaths(start_date = "1990-01-01", case="final_values")
-plotpaths(start_date = "2000-01-01", case="final_values")
-plotpaths(start_date = "2010-01-01", case="final_values")
-plotpaths(start_date = "2020-01-01", case="final_values")
+plot_procentage_returns(start_dates = ["2000-01-01", "2005-01-01", "2010-01-01", "2020-01-01"], leverage_values_for_plot = [1, 1.28, 3], leverage_labels_for_plot=['1x', 'Worst-Case', 'Mid-Case'], filename="Annualized_Return_by_Leverage_Strategy_multiple_starts_worst_mid.pdf")
+plot_procentage_returns(start_dates = ["2000-01-01", "2005-01-01", "2010-01-01", "2020-01-01"], leverage_values_for_plot = leverage_values, leverage_labels_for_plot = leverage_labels, filename="Annualized_Return_by_Leverage_Strategy_multiple_starts_all.pdf")
 
-plot_procentage_returns_different_starts_worst_mid(start_dates = ["1990-01-01", "1995-01-01", "2000-01-01", "2005-01-01", "2010-01-01", "2020-01-01"])
+plotpaths(start_date = "1990-01-01", case="final_values", filename="Paths_Final_Values_Leverages_1990.pdf")
+plotpaths(start_date = "2000-01-01", case="final_values", filename="Paths_Final_Values_Leverages_2000.pdf")
+plotpaths(start_date = "2010-01-01", case="final_values", filename="Paths_Final_Values_Leverages_2010.pdf")
+plotpaths(start_date = "2020-01-01", case="final_values", filename="Paths_Final_Values_Leverages_2020.pdf")
 
-plot_var_histogram(dataIndexSP500, title="Distribution of Daily Returns with VaR for the index of the ETF", confidence_level=0.95, bins=50)
-plot_var_histogram(leveraged_mid_case["price"], title="Distribution of Daily Returns with VaR for mid-case leveraged ETF", confidence_level=0.95, bins=50)
-plot_var_histogram(leveraged_worst_case["price"], title="Distribution of Daily Returns with VaR for worst-case leveraged ETF", confidence_level=0.95, bins=50)
+plot_procentage_returns_different_starts_worst_mid(start_dates = ["1990-01-01", "1995-01-01", "2000-01-01", "2005-01-01", "2010-01-01", "2020-01-01"], filename="Percentage_Returns_Mid_Worst_Multiple_Starts_General_Scenario.pdf")
 
-plot_returns_with_var_threshold(leveraged_index["price"], leveraged_index["date"], 1, title="Daily Returns with Historical VaR Threshold for the index of the ETF", confidence_level=0.95)
-plot_returns_with_var_threshold(leveraged_mid_case["price"], leveraged_mid_case["date"], 3, title="Daily Returns with Historical VaR Threshold for mid-case leveraged ETF", confidence_level=0.95)
-plot_returns_with_var_threshold(leveraged_worst_case["price"], leveraged_worst_case["date"], 1.28, title="Daily Returns with Historical VaR Threshold for worst-case leveraged ETF", confidence_level=0.95)
+plot_var_histogram(dataIndexSP500, title="Distribution of Daily Returns with VaR for the index of the ETF", filename="VaR_Histogram_Index_General_Scenario.pdf", confidence_level=0.95, bins=50)
+plot_var_histogram(leveraged_worst_case["price"], title="Distribution of Daily Returns with VaR for worst-case leveraged ETF", filename="VaR_Histogram_Worst_Case_General_Scenario.pdf", confidence_level=0.95, bins=50)
+plot_var_histogram(leveraged_mid_case["price"], title="Distribution of Daily Returns with VaR for mid-case leveraged ETF", filename="VaR_Histogram_Mid_Case_General_Scenario.pdf", confidence_level=0.95, bins=50)
+
+plot_returns_with_var_threshold(leveraged_index["price"], leveraged_index["date"], 1, title="Daily Returns with Historical VaR Threshold for the index of the ETF", filename="Daily_Returns_VaR_Index_General_Scenario", confidence_level=0.95)
+plot_returns_with_var_threshold(leveraged_mid_case["price"], leveraged_mid_case["date"], 3, title="Daily Returns with Historical VaR Threshold for mid-case leveraged ETF", filename="Daily_Returns_VaR_Mid_Case_General_Scenario", confidence_level=0.95)
+plot_returns_with_var_threshold(leveraged_worst_case["price"], leveraged_worst_case["date"], 1.28, title="Daily Returns with Historical VaR Threshold for worst-case leveraged ETF", filename="Daily_Returns_VaR_Worst_Case_General_Scenario", confidence_level=0.95)
 
 plot_overlaid_var_histograms(
     paths=[leveraged_index, leveraged_mid_case, leveraged_worst_case],
     labels_for_plot=["1x", "Mid-Case", "Worst-Case"],
-    values_for_plot=[1, 3, 1.28]
+    values_for_plot=[1, 3, 1.28],
+    filename="Overlaid_VaR_Histogram_General_Scenario.pdf"
 )
 
-plot_max_drawdowns(dates = ['2007-01-01','2008-01-01','2009-01-01','2010-01-01','2011-01-01','2012-01-01','2013-01-01','2014-01-01','2015-01-01','2016-01-01','2017-01-01','2018-01-01','2019-01-01','2020-01-01','2021-01-01','2022-01-01','2023-01-01','2024-01-01','2025-01-01'])
+plot_max_drawdowns(dates = ['2007-01-01','2008-01-01','2009-01-01','2010-01-01','2011-01-01','2012-01-01','2013-01-01','2014-01-01','2015-01-01','2016-01-01','2017-01-01','2018-01-01','2019-01-01','2020-01-01','2021-01-01','2022-01-01','2023-01-01','2024-01-01','2025-01-01'], filename="Plot_max_drawdowns_General_Scenario.pdf")
 
-plot_risk_return_metrics()
+plot_risk_return_metrics(filename="Plot_Risk_Return_Metrics")
 
-
+'''
 #Stress scenario
 invest_crash_date = "2020-01-15"
 post_crash_date_2y5 = "2022-07-15"
@@ -972,24 +1015,40 @@ leveraged_5x_sp_stress = leveragedPath(dataIndexSP500_stress, 5, initial_value_s
 leveraged_worst_case_stress = leveragedPath(dataIndexSP500_stress, 1.28, initial_value_stress)
 leveraged_mid_case_stress = leveragedPath(dataIndexSP500_stress, 3, initial_value_stress)
 
-
-plot_procentage_returns_different_starts_worst_mid(start_dates = ["2019-07-01", "2020-01-01", "2020-07-01", "2021-01-01", "2021-07-01"], end_date=post_crash_date_2y5)
+'''
+plot_procentage_returns_different_starts_worst_mid(start_dates = ["2019-07-01", "2020-01-01", "2020-07-01", "2021-01-01", "2021-07-01"], filename="Percentage_Returns_Mid_Worst_Multiple_Starts_Stress_Scenario.pdf", end_date=post_crash_date_2y5)
 
 plot_overlaid_var_histograms(
     paths=[leveraged_index_stress, leveraged_mid_case_stress, leveraged_worst_case_stress],
     labels_for_plot=["1x", "Mid-Case", "Worst-Case"],
-    values_for_plot=[1, 3, 1.28]
+    values_for_plot=[1, 3, 1.28],
+    filename="Overlaid_VaR_Histogram_Stress_Scenario.pdf"
 )
-plot_var_histogram(leveraged_index_stress["price"], title="Distribution of Daily Returns with VaR for the unleveraged ETF", confidence_level=0.95, bins=50)
-plot_var_histogram(leveraged_worst_case_stress["price"], title="Distribution of Daily Returns with VaR for worst-case leveraged ETF", confidence_level=0.95, bins=50)
-plot_var_histogram(leveraged_mid_case_stress["price"], title="Distribution of Daily Returns with VaR for mid-case leveraged ETF", confidence_level=0.95, bins=50)
-plot_max_drawdowns(dates = ['2019-01-01','2020-01-01','2021-01-01','2022-01-01'])
-plotpaths(start_date = invest_crash_date, case="all_paths", end_date="2025-11-20")
-plotpaths(start_date = invest_crash_date, case="final_values", end_date="2023-08-01")
-plotpaths(start_date = invest_crash_date, case="all_paths", end_date="2023-08-01")
-plotpaths(start_date = invest_crash_date, case="all_paths", end_date="2024-08-01")
-plotpaths(start_date = "2019-02-01", case="all_paths", end_date="2021-02-01")
-plot_stacked_paths_selected_leverages(multiple_dates = [invest_crash_date, "2020-07-15", "2021-01-15", "2021-07-15"], selected_leverages=[1, 1.28, 3, 5], end_date="2023-07-15")
-plot_stacked_paths_selected_leverages(multiple_dates = [invest_crash_date, "2020-07-15", "2021-01-15", "2021-07-15"], selected_leverages=[1, 1.28,2, 3, 4, 5], end_date="2023-07-15")
+plot_var_histogram(leveraged_index_stress["price"], title="Distribution of Daily Returns with VaR for the unleveraged ETF", filename="VaR_Histogram_Index_Stress_Scenario.pdf", confidence_level=0.95, bins=50)
+plot_var_histogram(leveraged_worst_case_stress["price"], title="Distribution of Daily Returns with VaR for worst-case leveraged ETF", filename="VaR_Histogram_Worst_Case_Stress_Scenario.pdf", confidence_level=0.95, bins=50)
+plot_var_histogram(leveraged_mid_case_stress["price"], title="Distribution of Daily Returns with VaR for mid-case leveraged ETF", filename="VaR_Histogram_Mid_Case_Stress_Scenario.pdf", confidence_level=0.95, bins=50)
+'''
+plot_risk_return_metrics(filename="Plot_Risk_Return_Metrics_Stress_Scenario", start_date_comparisons=invest_crash_date, end_date_comparisons=post_crash_date_2y5)
+'''
+plot_returns_with_var_threshold(leveraged_index_stress["price"], leveraged_index_stress["date"], 1, title="Daily Returns with Historical VaR Threshold for the index of the ETF", filename="Daily_Returns_VaR_Index_Stress_Scenario", confidence_level=0.95)
+plot_returns_with_var_threshold(leveraged_mid_case_stress["price"], leveraged_mid_case_stress["date"], 3, title="Daily Returns with Historical VaR Threshold for mid-case leveraged ETF", filename="Daily_Returns_VaR_Mid_Case_Stress_Scenario", confidence_level=0.95)
+plot_returns_with_var_threshold(leveraged_worst_case_stress["price"], leveraged_worst_case_stress["date"], 1.28, title="Daily Returns with Historical VaR Threshold for worst-case leveraged ETF", filename="Daily_Returns_VaR_Worst_Case_Stress_Scenario", confidence_level=0.95)
+plot_max_drawdowns(dates = ['2019-01-01','2020-01-01','2021-01-01','2022-01-01'], filename="Plot_max_drawdowns_Stress_Scenario.pdf")
+plotpaths(start_date = invest_crash_date, case="all_paths", filename="Paths_All_Leverages_2020_2025.pdf", end_date="2025-11-20")
+plotpaths(start_date = invest_crash_date, case="final_values", filename="Paths_Final_Values_2020_2023.pdf", end_date="2023-08-01")
+plotpaths(start_date = invest_crash_date, case="all_paths", filename="Paths_All_Leverages_2020_2023.pdf", end_date="2023-08-01")
+plotpaths(start_date = invest_crash_date, case="all_paths", filename="Paths_All_Leverages_2020_2024.pdf", end_date="2024-08-01")
 
-days_to_recovery_all_leverages(leverage_values_ordered, lev_labels=leverage_labels_ordered, start_date="2005-01-01", end_date="2025-01-01", start_crisis=invest_crash_date, end_crisis="2022-02-01")
+plotpaths(start_date = invest_crash_date, case="all_paths", filename="Paths_All_Leverages_2020_2022.pdf", end_date="2022-07-01")
+plotpaths(start_date = invest_crash_date, case="final_values", filename="Paths_Final_Values_2020_2022.pdf", end_date="2022-07-01")
+plot_procentage_return(start_date = invest_crash_date, filename="Annualized_Return_by_Leverage_Strategy_2020_2022.pdf", end_date="2022-07-01")
+plot_procentage_returns(start_dates = ["2019-07-15", "2020-01-15", "2020-07-15", "2021-01-15", "2021-07-15", "2022-01-15"], leverage_values_for_plot = leverage_values, leverage_labels_for_plot = leverage_labels, filename="Percentage_Returns_All_Leverages_Multiple_Starts_Stress_Scenario.pdf", end_date=post_crash_date_2y5)
+plot_procentage_returns_different_starts_worst_mid(start_dates = ["2019-07-15", "2020-01-15", "2020-07-15", "2021-01-15", "2021-07-15", "2022-01-15"], filename="Percentage_Returns_Mid_Worst_Multiple_Starts_Stress_Scenario.pdf", end_date=post_crash_date_2y5)
+
+plot_stacked_paths_selected_leverages(multiple_dates = [invest_crash_date, "2020-07-15", "2021-01-15", "2021-07-15"], filename="Stacked_Paths_20_21_21_Some_Lev.pdf", selected_leverages=[1, 1.28, 3, 5], end_date="2023-07-15")
+plot_stacked_paths_selected_leverages(multiple_dates = [invest_crash_date, "2020-07-15", "2021-01-15", "2021-07-15"], filename="Stacked_Paths_20_21_21_All_Lev.pdf", selected_leverages=[1, 1.28,2, 3, 4, 5], end_date="2023-07-15")
+
+days_to_recovery_all_leverages(leverage_values_ordered, lev_labels=leverage_labels_ordered, filename="Plot_Days_To_Recover.pdf", start_date="2005-01-01", end_date="2025-01-01", start_crisis=invest_crash_date, end_crisis="2022-02-01")
+
+'''
+print(f"✅ All Evaluations and Plots are finished")
