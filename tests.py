@@ -70,7 +70,8 @@ def days_to_recovery_for_leverage(lev,
         recovery_date = path_recovered["date"].iloc[0]
         print(recovery_date)
         calendar_days = (recovery_date - max_price_before_stress_date).days
-        #trading_days = len(after_peak.loc[:recovery_date]) - 1  # exclude peak day itself
+        trading_days = len(path_leveraged_just_before_stress[(path_leveraged_just_before_stress["date"] >= max_price_before_stress_date) &
+                        (path_leveraged_just_before_stress["date"] <= recovery_date)]) - 1
 
     return {
         "leverage": lev,
@@ -78,7 +79,7 @@ def days_to_recovery_for_leverage(lev,
         "peak_price": max_price_before_stress,
         "recovery_date": recovery_date,
         "calendar_days": calendar_days,
-        #"trading_days": trading_days,
+        "trading_days": trading_days,
     }
 
 def days_to_recovery_all_leverages(leverage_values,
@@ -86,10 +87,7 @@ def days_to_recovery_all_leverages(leverage_values,
                                    end_date="2025-01-01",
                                    start_crisis="2020-02-01",
                                    end_crisis="2022-02-01"):
-    """
-    Compute days to recovery for a list of leverages.
-    Returns a DataFrame with results and optionally a bar plot.
-    """
+    
     results = []
     for lev in leverage_values:
         res = days_to_recovery_for_leverage(
@@ -101,35 +99,50 @@ def days_to_recovery_all_leverages(leverage_values,
         )
         results.append(res)
 
-    df = pd.DataFrame(results)
-    return df
+    recovery_df = pd.DataFrame(results)
+    
+    # Latex code for a table
+    print(r"\begin{table}[H]")
+    print(r"  \centering")
+    print(r"  \begin{tabular}{lcccc}")
+    print(r"    \toprule")
+    print(r"    Leverage & Peak Date & Peak Price & Recovery Date & Calendar Days \\")
+    print(r"    \midrule")
 
-# ---- Example usage ----
-#start_date_comparisons = "2005-01-01"
-#end_date_comparisons   = "2025-01-01"
-#start_crisis           = "2020-02-01",
-#end_crisis             = "2022-02-01"
+    for _, row in recovery_df.iterrows():
+        lev = f"{row['leverage']:.2f}".replace(".00", "") + "x" if row['leverage']<=5 else "Worst"
+        peak_date = str(row['peak_date'])[:10]
+        rec_date  = str(row['recovery_date'])[:10]
+        print(f"    {lev:8} & {peak_date} & {row['peak_price']:.2f} & {rec_date} & {int(row['calendar_days'])} \\\\")
 
-recovery_df = days_to_recovery_all_leverages(
-    leverage_values
-)
+    print(r"    \bottomrule")
+    print(r"  \end{tabular}")
+    print(r"  \caption{Peak values and recovery durations for leveraged S\&P500 strategies during the 2020 Covid-19 crash.}")
+    print(r"  \label{tab:covid_recovery_leverage}")
+    print(r"\end{table}")
 
-print(recovery_df)
+    # Plot
+    x = np.arange(len(leverage_values))
+    y = recovery_df['trading_days'].values
+
+    plt.figure(figsize=(6,5))
+    plt.plot(x, y, marker='o', linestyle='-', color='darkred')
+
+    plt.title('Days to Recovery the COVID crash by Leverage')
+    plt.xlabel('Leverage Ratio', color='black')
+    plt.ylabel('Trading Days to Recovery', color='black')
+
+    plt.xticks(x, leverage_labels)
+    plt.grid(True, alpha=0.4)
+
+    plt.tight_layout()
+    plt.show()
 
 
-'''
-# Optional: bar plot of trading days to recovery
-plt.figure(figsize=(8, 5))
-plt.bar(
-    [str(lv) for lv in recovery_df["leverage"]],
-    recovery_df["trading_days"],
-    color="steelblue",
-    edgecolor="black"
-)
-plt.ylabel("Trading Days to Recovery")
-plt.xlabel("Leverage Ratio")
-plt.title("Days to Recover Pre-COVID Peak by Leverage Strategy")
-plt.grid(axis="y", alpha=0.3)
-plt.tight_layout()
-plt.show()
-'''
+
+
+
+days_to_recovery_all_leverages(leverage_values, start_date="2005-01-01", end_date="2025-01-01", start_crisis="2020-02-01", end_crisis="2022-02-01")
+
+
+

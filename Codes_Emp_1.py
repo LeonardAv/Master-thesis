@@ -16,7 +16,9 @@ font = {'family': 'serif',
         'size': 14}
 
 leverage_values = [1, 2, 3, 4, 5, 1.28, 3]
+leverage_values_ordered = [1, 1.28, 2, 3, 4, 5]
 leverage_labels = ['1x', '2x', '3x', '4x', '5x', 'Worst-Case', 'Mid-Case']
+leverage_labels_ordered = ['1x', 'Worst-Case', '2x', 'Mid-Case', '4x', '5x']
 
 colors = [
     "#000000",  # black (1x)
@@ -219,7 +221,7 @@ def plot_procentage_returns(start_dates, leverage_values_for_plot, leverage_labe
     print(f"✅ Figure saved as: {filename}")
     
 
-def plot_procentage_returns_different_starts_worst_mid(start_dates):
+def plot_procentage_returns_different_starts_worst_mid(start_dates, end_date="2025-01-01"):
     # Here we want to box plot the worst-case and mid-case leverage strategies for different start dates in a way that the box
     # is the percentage return of the mid case and then we plot the worst case box on top of it. Or in case were the worst case is worse
     # than the mid case, we plot the worst case box in a way that it is seen that this box is below
@@ -227,7 +229,7 @@ def plot_procentage_returns_different_starts_worst_mid(start_dates):
     mid_case_returns = []
     worst_case_returns = []
     for start_date in start_dates:
-        data = yf.Ticker("^GSPC").history(start=start_date, end="2025-01-01")["Close"].dropna()
+        data = yf.Ticker("^GSPC").history(start=start_date, end=end_date)["Close"].dropna()
         initial_value = data.iloc[0]
         investment_time_year = (data.index[-1] - data.index[0]).days / 365.25
 
@@ -769,16 +771,129 @@ def plot_risk_return_metrics():
     fig.suptitle("Risk and Return Metrics Across Leverage Strategies", fontsize=16)
     plt.tight_layout()
     plt.show()
+    
+    
+def days_to_recovery_for_leverage(lev,
+                                  start_date="2005-01-01",
+                                  end_date="2025-01-01",
+                                  start_crisis="2020-02-01",
+                                  end_crisis="2022-02-01"):
+      
+    data_long = yf.Ticker("^GSPC").history(start=start_date, end=end_date)["Close"].dropna()
+    data_stress = yf.Ticker("^GSPC").history(start=start_crisis, end=end_crisis)["Close"].dropna()
+
+    initial_value_long = data_long.iloc[0]
+    initial_value_stress = data_stress.iloc[0]
+
+    path_leveraged_long_before_stress = leveragedPath(data_long, lev, initial_value_long)
+    path_leveraged_just_before_stress = leveragedPath(data_stress, lev, initial_value_stress)
+
+    lowest_point_crisis_idx = path_leveraged_just_before_stress["price"].idxmin()
+    lowest_point_crisis_price = path_leveraged_just_before_stress.loc[lowest_point_crisis_idx, "price"]
+    lowest_point_crisis_date = pd.to_datetime(path_leveraged_just_before_stress.loc[lowest_point_crisis_idx, "date"])
+    
+    path_before_lowest_point = pd.DataFrame(path_leveraged_just_before_stress)
+    path_before_lowest_point["date"] = pd.to_datetime(path_before_lowest_point["date"])
+    path_before_lowest_point = path_before_lowest_point[path_before_lowest_point['date'] < lowest_point_crisis_date]
+    path_after_lowest_point = pd.DataFrame(path_leveraged_just_before_stress)
+    path_after_lowest_point["date"] = pd.to_datetime(path_after_lowest_point["date"])
+    path_after_lowest_point = path_after_lowest_point[path_after_lowest_point['date'] > lowest_point_crisis_date]
+    
+    if len(path_before_lowest_point) != 0:
+        idx_max_before_stress = path_before_lowest_point["price"].idxmax()
+        max_price_before_stress = path_before_lowest_point.loc[idx_max_before_stress, "price"]
+        max_price_before_stress_date = path_before_lowest_point.loc[idx_max_before_stress, "date"]
+    else:
+        max_price_before_stress = lowest_point_crisis_price
+        max_price_before_stress_date = lowest_point_crisis_date
+        
+    path_recovered = path_after_lowest_point[path_after_lowest_point["price"] >= max_price_before_stress]
+
+    if path_recovered.empty:
+        recovery_date = None
+        calendar_days = None
+        trading_days = None
+    else:
+        recovery_date = path_recovered["date"].iloc[0]
+        calendar_days = (recovery_date - max_price_before_stress_date).days
+        trading_days = len(path_leveraged_just_before_stress[(path_leveraged_just_before_stress["date"] >= max_price_before_stress_date) &
+                        (path_leveraged_just_before_stress["date"] <= recovery_date)]) - 1
+
+    return {
+        "leverage": lev,
+        "peak_date": max_price_before_stress_date,
+        "peak_price": max_price_before_stress,
+        "recovery_date": recovery_date,
+        "calendar_days": calendar_days,
+        "trading_days": trading_days,
+    }
+
+def days_to_recovery_all_leverages(leverage_values,
+                                   lev_labels,
+                                   start_date="2005-01-01",
+                                   end_date="2025-01-01",
+                                   start_crisis="2020-02-01",
+                                   end_crisis="2022-02-01"):
+    
+    results = []
+    for lev in leverage_values:
+        res = days_to_recovery_for_leverage(
+            lev,
+            start_date=start_date,
+            end_date=end_date,
+            start_crisis=start_crisis,
+            end_crisis=end_crisis,
+        )
+        results.append(res)
+
+    recovery_df = pd.DataFrame(results)
+    
+    # Latex code for a table
+    print(r"\begin{table}[H]")
+    print(r"  \centering")
+    print(r"  \begin{tabular}{lcccc}")
+    print(r"    \toprule")
+    print(r"    Leverage & Peak Date & Peak Price & Recovery Date & Trading Days \\")
+    print(r"    \midrule")
+
+    for _, row in recovery_df.iterrows():
+        lev = f"{row['leverage']:.2f}".replace(".00", "") + "x" if row['leverage']<=5 else "Worst"
+        peak_date = str(row['peak_date'])[:10]
+        rec_date  = str(row['recovery_date'])[:10]
+        print(f"    {lev:8} & {peak_date} & {row['peak_price']:.2f} & {rec_date} & {int(row['trading_days'])} \\\\")
+
+    print(r"    \bottomrule")
+    print(r"  \end{tabular}")
+    print(r"  \caption{Peak values and recovery durations for leveraged S\&P500 strategies during the 2020 Covid-19 crash.}")
+    print(r"  \label{tab:covid_recovery_leverage}")
+    print(r"\end{table}")
+
+    # Plot
+    x = np.arange(len(leverage_values))
+    y = recovery_df['trading_days'].values
+
+    plt.figure(figsize=(6.5,6))
+    plt.plot(x, y, marker='o', linestyle='-', color='darkred')
+
+    plt.title('Days to recover from the COVID crash by Leverage')
+    plt.xlabel('Leverage Ratio', color='black')
+    plt.ylabel('Trading Days to Recovery', color='black')
+
+    plt.xticks(x, lev_labels, rotation=45, ha='right')
+    plt.grid(True, alpha=0.4)
+
+    plt.tight_layout()
+    plt.show()
+    
+    
   
   
   
 
 # Set standart values and paths
 dataIndexSP500 = yf.Ticker("^GSPC").history(start=start_date, end=end_date)["Close"]
-dataIndexSP500_stress = yf.Ticker("^GSPC").history(start="2020-02-01", end="2022-08-01")["Close"]
 
 initial_value = dataIndexSP500.iloc[0]
-initial_value_stress = dataIndexSP500_stress.iloc[0]
 
 leveraged_index = leveragedPath(dataIndexSP500, 1, initial_value)
 leveraged_2x_sp = leveragedPath(dataIndexSP500, 2, initial_value)
@@ -788,13 +903,6 @@ leveraged_5x_sp = leveragedPath(dataIndexSP500, 5, initial_value)
 leveraged_worst_case = leveragedPath(dataIndexSP500, 1.28, initial_value)
 leveraged_mid_case = leveragedPath(dataIndexSP500, 3, initial_value)
 
-leveraged_index_stress = leveragedPath(dataIndexSP500_stress, 1, initial_value_stress)
-leveraged_2x_sp_stress = leveragedPath(dataIndexSP500_stress, 2, initial_value_stress)
-leveraged_3x_sp_stress = leveragedPath(dataIndexSP500_stress, 3, initial_value_stress)
-leveraged_4x_sp_stress = leveragedPath(dataIndexSP500_stress, 4, initial_value_stress)
-leveraged_5x_sp_stress = leveragedPath(dataIndexSP500_stress, 5, initial_value_stress)
-leveraged_worst_case_stress = leveragedPath(dataIndexSP500_stress, 1.28, initial_value_stress)
-leveraged_mid_case_stress = leveragedPath(dataIndexSP500_stress, 3, initial_value_stress)
 
 result_unlev = dataIndexSP500.iloc[-1]
 result_2x = leveragedPath(dataIndexSP500, 2, initial_value).iloc[-1]['price']
@@ -809,14 +917,14 @@ values = [result_unlev, result_2x, result_3x, result_4x, result_5x, result_worst
 
 
 # Run modules
-'''
+
 plotpaths(start_date = "2005-01-01", case="final_values")
 plotpaths(start_date = "2005-01-01", case="all_paths")
 plotpaths(start_date = "2005-01-01", case="worst_vs_mid")
 
 plot_stacked_paths_selected_leverages(multiple_dates = ["2000-01-01", "2005-01-01", "2010-01-01", "2020-01-01"])
 
-plot_procentage_return(start_date = "2000-01-01")
+plot_procentage_return(start_date = "2005-01-01")
 plot_procentage_return(start_date = "2010-01-01")
 plot_procentage_return(start_date = "2015-01-01")
 
@@ -847,9 +955,26 @@ plot_overlaid_var_histograms(
 plot_max_drawdowns(dates = ['2007-01-01','2008-01-01','2009-01-01','2010-01-01','2011-01-01','2012-01-01','2013-01-01','2014-01-01','2015-01-01','2016-01-01','2017-01-01','2018-01-01','2019-01-01','2020-01-01','2021-01-01','2022-01-01','2023-01-01','2024-01-01','2025-01-01'])
 
 plot_risk_return_metrics()
-'''
+
 
 #Stress scenario
+invest_crash_date = "2020-01-15"
+post_crash_date_2y5 = "2022-07-15"
+post_crash_date_3y = "2023-01-15"
+post_crash_date_4y = "2024-01-15"
+dataIndexSP500_stress = yf.Ticker("^GSPC").history(start=invest_crash_date, end=post_crash_date_2y5)["Close"]
+initial_value_stress = dataIndexSP500_stress.iloc[0]
+leveraged_index_stress = leveragedPath(dataIndexSP500_stress, 1, initial_value_stress)
+leveraged_2x_sp_stress = leveragedPath(dataIndexSP500_stress, 2, initial_value_stress)
+leveraged_3x_sp_stress = leveragedPath(dataIndexSP500_stress, 3, initial_value_stress)
+leveraged_4x_sp_stress = leveragedPath(dataIndexSP500_stress, 4, initial_value_stress)
+leveraged_5x_sp_stress = leveragedPath(dataIndexSP500_stress, 5, initial_value_stress)
+leveraged_worst_case_stress = leveragedPath(dataIndexSP500_stress, 1.28, initial_value_stress)
+leveraged_mid_case_stress = leveragedPath(dataIndexSP500_stress, 3, initial_value_stress)
+
+
+plot_procentage_returns_different_starts_worst_mid(start_dates = ["2019-07-01", "2020-01-01", "2020-07-01", "2021-01-01", "2021-07-01"], end_date=post_crash_date_2y5)
+
 plot_overlaid_var_histograms(
     paths=[leveraged_index_stress, leveraged_mid_case_stress, leveraged_worst_case_stress],
     labels_for_plot=["1x", "Mid-Case", "Worst-Case"],
@@ -859,10 +984,12 @@ plot_var_histogram(leveraged_index_stress["price"], title="Distribution of Daily
 plot_var_histogram(leveraged_worst_case_stress["price"], title="Distribution of Daily Returns with VaR for worst-case leveraged ETF", confidence_level=0.95, bins=50)
 plot_var_histogram(leveraged_mid_case_stress["price"], title="Distribution of Daily Returns with VaR for mid-case leveraged ETF", confidence_level=0.95, bins=50)
 plot_max_drawdowns(dates = ['2019-01-01','2020-01-01','2021-01-01','2022-01-01'])
-plotpaths(start_date = "2020-02-01", case="all_paths", end_date="2025-11-20")
-plotpaths(start_date = "2020-02-01", case="final_values", end_date="2023-08-01")
-plotpaths(start_date = "2020-02-01", case="all_paths", end_date="2023-08-01")
-plotpaths(start_date = "2020-02-01", case="all_paths", end_date="2024-08-01")
+plotpaths(start_date = invest_crash_date, case="all_paths", end_date="2025-11-20")
+plotpaths(start_date = invest_crash_date, case="final_values", end_date="2023-08-01")
+plotpaths(start_date = invest_crash_date, case="all_paths", end_date="2023-08-01")
+plotpaths(start_date = invest_crash_date, case="all_paths", end_date="2024-08-01")
 plotpaths(start_date = "2019-02-01", case="all_paths", end_date="2021-02-01")
-plot_stacked_paths_selected_leverages(multiple_dates = ["2020-02-01", "2020-10-01", "2021-02-01", "2021-10-01"], selected_leverages=[1, 1.28, 3, 5], end_date="2023-08-01")
-plot_stacked_paths_selected_leverages(multiple_dates = ["2020-02-01", "2020-10-01", "2021-02-01", "2021-10-01"], selected_leverages=[1, 1.28,2, 3, 4, 5], end_date="2023-08-01")
+plot_stacked_paths_selected_leverages(multiple_dates = [invest_crash_date, "2020-07-15", "2021-01-15", "2021-07-15"], selected_leverages=[1, 1.28, 3, 5], end_date="2023-07-15")
+plot_stacked_paths_selected_leverages(multiple_dates = [invest_crash_date, "2020-07-15", "2021-01-15", "2021-07-15"], selected_leverages=[1, 1.28,2, 3, 4, 5], end_date="2023-07-15")
+
+days_to_recovery_all_leverages(leverage_values_ordered, lev_labels=leverage_labels_ordered, start_date="2005-01-01", end_date="2025-01-01", start_crisis=invest_crash_date, end_crisis="2022-02-01")
