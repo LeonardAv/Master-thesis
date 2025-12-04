@@ -73,6 +73,15 @@ a = [6.0, 9.0]
 a.append((a[0] + a[1]) / 2)
 sigma = [0.2, 0.5]
 sigma.append((sigma[0] + sigma[1]) / 2)
+
+
+##try new values
+zeta = 0.35
+zeta = [0.1,  0.8]
+zeta.append((zeta[0] + zeta[1]) / 2)
+a = [11.0, 17.0]
+a.append((a[0] + a[1]) / 2)
+
 params = {name: eval(name) for name in ['p', 'mu', 'zeta', 'rho', 'b', 'a', 'sigma']}
 
 
