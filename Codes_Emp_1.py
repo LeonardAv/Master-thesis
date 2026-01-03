@@ -4,10 +4,10 @@ import pandas as pd
 import numpy as np
 
 #
-plt.rcParams['font.family'] = 'serif'     # or 'sans-serif', 'DejaVu Sans', etc.
-plt.rcParams['axes.titleweight'] = 'bold' # bold titles (optional)
-plt.rcParams['axes.titlesize'] = 14       # title size for all subplot titles
-plt.rcParams['figure.titlesize'] = 14     # main figure title size
+plt.rcParams['font.family'] = 'serif'
+plt.rcParams['axes.titleweight'] = 'bold'
+plt.rcParams['axes.titlesize'] = 14
+plt.rcParams['figure.titlesize'] = 14
 #
 
 font = {'family': 'serif',
@@ -163,7 +163,7 @@ def plot_procentage_return(start_date, filename, end_date="2025-01-01"):
             bar_color = bar.get_facecolor()
             plt.text(
                 bar.get_x() + bar.get_width() / 2,   # x position (center of bar)
-                height + max(returns) * 0.015,        # y position (slightly above bar)
+                height + max(returns) * 0.015,       # y position (slightly above bar)
                 f'{height:,.0f}',                    # formatted value
                 ha='center', va='bottom',
                 fontsize=8, color=bar_color, fontweight='bold'
@@ -224,10 +224,7 @@ def plot_procentage_returns(start_dates, leverage_values_for_plot, leverage_labe
     
 
 def plot_procentage_returns_different_starts_worst_mid(start_dates, filename, end_date="2025-01-01"):
-    # Here we want to box plot the worst-case and mid-case leverage strategies for different start dates in a way that the box
-    # is the percentage return of the mid case and then we plot the worst case box on top of it. Or in case were the worst case is worse
-    # than the mid case, we plot the worst case box in a way that it is seen that this box is below
-    
+        
     mid_case_returns = []
     worst_case_returns = []
     for start_date in start_dates:
@@ -954,7 +951,7 @@ values = [result_unlev, result_2x, result_3x, result_4x, result_5x, result_worst
 
 # Run modules
 
-'''
+
 plotpaths(start_date = "2005-01-01", case="final_values", filename="Final_Values_Leverages_2005.pdf")
 plotpaths(start_date = "2005-01-01", case="all_paths", filename="Paths_All_cases_Leverages_2005.pdf")
 plotpaths(start_date = "2005-01-01", case="worst_vs_mid", filename="Paths_Mid_Worst_Leverages_2005.pdf")
@@ -999,7 +996,7 @@ plot_max_drawdowns(dates = ['2007-01-01','2008-01-01','2009-01-01','2010-01-01',
 
 plot_risk_return_metrics(filename="Plot_Risk_Return_Metrics")
 
-'''
+
 #Stress scenario
 invest_crash_date = "2020-01-15"
 post_crash_date_2y5 = "2022-07-15"
@@ -1015,7 +1012,7 @@ leveraged_5x_sp_stress = leveragedPath(dataIndexSP500_stress, 5, initial_value_s
 leveraged_worst_case_stress = leveragedPath(dataIndexSP500_stress, 1.28, initial_value_stress)
 leveraged_mid_case_stress = leveragedPath(dataIndexSP500_stress, 3, initial_value_stress)
 
-'''
+
 plot_procentage_returns_different_starts_worst_mid(start_dates = ["2019-07-01", "2020-01-01", "2020-07-01", "2021-01-01", "2021-07-01"], filename="Percentage_Returns_Mid_Worst_Multiple_Starts_Stress_Scenario.pdf", end_date=post_crash_date_2y5)
 
 plot_overlaid_var_histograms(
@@ -1027,9 +1024,9 @@ plot_overlaid_var_histograms(
 plot_var_histogram(leveraged_index_stress["price"], title="Distribution of Daily Returns with VaR for the unleveraged ETF", filename="VaR_Histogram_Index_Stress_Scenario.pdf", confidence_level=0.95, bins=50)
 plot_var_histogram(leveraged_worst_case_stress["price"], title="Distribution of Daily Returns with VaR for worst-case leveraged ETF", filename="VaR_Histogram_Worst_Case_Stress_Scenario.pdf", confidence_level=0.95, bins=50)
 plot_var_histogram(leveraged_mid_case_stress["price"], title="Distribution of Daily Returns with VaR for mid-case leveraged ETF", filename="VaR_Histogram_Mid_Case_Stress_Scenario.pdf", confidence_level=0.95, bins=50)
-'''
+
 plot_risk_return_metrics(filename="Plot_Risk_Return_Metrics_Stress_Scenario", start_date_comparisons=invest_crash_date, end_date_comparisons=post_crash_date_2y5)
-'''
+
 plot_returns_with_var_threshold(leveraged_index_stress["price"], leveraged_index_stress["date"], 1, title="Daily Returns with Historical VaR Threshold for the index of the ETF", filename="Daily_Returns_VaR_Index_Stress_Scenario", confidence_level=0.95)
 plot_returns_with_var_threshold(leveraged_mid_case_stress["price"], leveraged_mid_case_stress["date"], 3, title="Daily Returns with Historical VaR Threshold for mid-case leveraged ETF", filename="Daily_Returns_VaR_Mid_Case_Stress_Scenario", confidence_level=0.95)
 plot_returns_with_var_threshold(leveraged_worst_case_stress["price"], leveraged_worst_case_stress["date"], 1.28, title="Daily Returns with Historical VaR Threshold for worst-case leveraged ETF", filename="Daily_Returns_VaR_Worst_Case_Stress_Scenario", confidence_level=0.95)
@@ -1050,5 +1047,5 @@ plot_stacked_paths_selected_leverages(multiple_dates = [invest_crash_date, "2020
 
 days_to_recovery_all_leverages(leverage_values_ordered, lev_labels=leverage_labels_ordered, filename="Plot_Days_To_Recover.pdf", start_date="2005-01-01", end_date="2025-01-01", start_crisis=invest_crash_date, end_crisis="2022-02-01")
 
-'''
+
 print(f"✅ All Evaluations and Plots are finished")

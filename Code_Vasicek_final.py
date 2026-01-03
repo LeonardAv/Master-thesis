@@ -75,11 +75,10 @@ sigma = [0.2, 0.5]
 sigma.append((sigma[0] + sigma[1]) / 2)
 
 
-##try new values
-zeta = 0.35
-zeta = [0.1,  0.8]
+##different / new values
+zeta = [0.1,  0.35]
 zeta.append((zeta[0] + zeta[1]) / 2)
-a = [11.0, 17.0]
+a = [8.0, 14.0]
 a.append((a[0] + a[1]) / 2)
 
 params = {name: eval(name) for name in ['p', 'mu', 'zeta', 'rho', 'b', 'a', 'sigma']}
@@ -95,7 +94,7 @@ def minimizer2D(Array1, Array2):
     bounds = [(Array1[0], Array1[1]), (Array2[0], Array2[1])]
     
 def utility_function(mu_val, zeta_val, rho_val, b_val, a_val, sigma_val, beta_val):
-    # Differntiate between all the cases
+    # Differentiate between all the cases
     
     if beta_val >= 1 and rho_val[1] > 0:
     # \beta >= 1 & \bar(\rho) > 0
@@ -332,7 +331,7 @@ def plot_utility_different_betas(parameter, case_type):
 
     
     # === Parameter intervals text box (bottom-right, smaller) ===   
-    latex_names = {'mu': r'\mu','sigma': r'\sigma','zeta': r'\zeta', 'rho': r'\rho','a': r'a','b': r'b'}
+    latex_names = {'mu': r'\mu','sigma': r'\sigma','zeta': r'\varsigma', 'rho': r'\rho','a': r'a','b': r'b'}
     interval_text = ""
     for parameter_name, values in parameter.items():
         param_tex = latex_names.get(parameter_name, parameter_name)

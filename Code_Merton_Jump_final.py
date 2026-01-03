@@ -2,17 +2,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import minimize
 
-r  = 0.02 # risk-free rate
-p = 0.5 # power utility exponent
-mu = [0.04, 0.08] # drift
-sigma = [0.15, 0.25] # diffusion
+r  = 0.02
+p = 0.5
+mu = [0.04, 0.08]
+sigma = [0.15, 0.25]
 
-mu_k = [0.80, 0.98] # jump mean
-xi = [2.0, 9.0] # jump intensity
+mu_k = [0.80, 0.98]
+xi = [2.0, 9.0]
 
 
-mu_k_0 = [1.0, 1.0] # jump mean
-xi_0 = [0.0, 0.0] # jump intensity
+mu_k_0 = [1.0, 1.0]
+xi_0 = [0.0, 0.0]
 
 precision_opt_beta = 10000
 
